@@ -1,3 +1,6 @@
 [submodule "iot_-lab-V6429"]
 	path = iot_-lab-V6429
 	url = git@github.com:M-TechEBS/iot_-lab-V6429.git
+[submodule "node_2_stm32/arduino-LoRa-stm32port"]
+	path = node_2_stm32/arduino-LoRa-stm32port
+	url = git@github.com:V6429/arduino-LoRa-stm32port.git

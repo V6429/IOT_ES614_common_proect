@@ -1,4 +1,13 @@
-## IOT-ES614 EXPERIMENTS
+# IOT-ES614 EXPERIMENTS
+----
+### things to add
+- Power saving mode
+- security
+- etc.....
+
+## EXP list
+---
+  
 
 | Sl.no | Title | Tasks | Tools/software | completed |
 |------|---|---|---|---|
