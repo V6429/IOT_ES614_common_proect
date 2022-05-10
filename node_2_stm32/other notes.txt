@@ -1,0 +1,3 @@
+The working frequency of Anxinke LoRa series modules (Ra-01/Ra-02) is 433MHz. 
+When using the module, the power supply current must be above 250mA. 
+The module is connected to the MCU through the SPI interface, pay attention to the common ground. …
