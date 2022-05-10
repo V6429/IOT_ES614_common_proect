@@ -36,6 +36,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+#define RECEIVE // TRANSMIT // RECEIVE
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -74,8 +76,11 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 	char x ='x',newline='\n';
-	unsigned int status,i;
+	char receivedval=0;
+	unsigned int status,i,rssi,lora_connect;
 	char buffer[25];
+	uint8_t received_data[12];
+	uint8_t packet_size = 0;
 
   /* USER CODE END 1 */
 
@@ -87,13 +92,13 @@ int main(void)
   /* USER CODE BEGIN Init */
 
   LoRa myLoRa;
-
-  myLoRa.CS_pin=cs_lora_pb0_Pin;
-  myLoRa.CS_port=cs_lora_pb0_GPIO_Port;
-  myLoRa.reset_pin=reset_lora_pb1_Pin;
-  myLoRa.reset_port=reset_lora_pb1_GPIO_Port;
-  myLoRa.DIO0_port       = dio_lora_pb2_GPIO_Port;
-  myLoRa.DIO0_pin        = dio_lora_pb2_Pin;
+  myLoRa=newLoRa();
+  myLoRa.CS_pin			=cs_lora_pb0_Pin;
+  myLoRa.CS_port		=cs_lora_pb0_GPIO_Port;
+  myLoRa.reset_pin		=reset_lora_pb1_Pin;
+  myLoRa.reset_port		=reset_lora_pb1_GPIO_Port;
+  myLoRa.DIO0_port      = dio_lora_pb2_GPIO_Port;
+  myLoRa.DIO0_pin       = dio_lora_pb2_Pin;
   myLoRa.hSPIx=&hspi2;
 
   /* USER CODE END Init */
@@ -110,13 +115,22 @@ int main(void)
   MX_USART2_UART_Init();
   MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t data_addr = RegVersion & 0x7F;
-  status =LoRa_init(&myLoRa);
-   if(status != 200){
+  //uint8_t data_addr = RegVersion & 0x7F;
+  lora_connect =LoRa_init(&myLoRa);
+   if(lora_connect == LORA_OK){
  	  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin,GPIO_PIN_SET);
- 	  sniprintf(buffer,sizeof(buffer),"Lora connected...status=%d\n",status);
- 	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 100);
-   }
+ 	  sniprintf(buffer,sizeof(buffer),"Lora connected...status= %ud \n",lora_connect);
+ 	  HAL_UART_Transmit(&huart2,(uint8_t*) buffer, sizeof(buffer), 100);
+   }else
+	   while(1)
+	   {
+		   	      sniprintf(buffer,sizeof(buffer),"\n LORA NOT CONNECTED");
+		    	  HAL_UART_Transmit(&huart2,(uint8_t*) buffer, sizeof(buffer), 100);
+	   }
+
+#ifdef  RECEIVE
+	LoRa_startReceiving(&myLoRa);
+#endif
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -125,13 +139,12 @@ int main(void)
   {
 
 
-	    sniprintf(buffer,sizeof(buffer),"status= %u\n",status);
-	 	HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 100);
+		for(i=0;i<sizeof(buffer);i++)
+		 		buffer[i]=0;
 
 	 	//TODO: not able to find memset from stdlib
-	 	for(i=0;i<25;i++)
-	 		buffer[i]=0;
 
+#ifdef TRANSMIT
 	 	status= LoRa_transmit(&myLoRa, &x, sizeof(x), 200);
 	 	HAL_Delay(1000);
 	 	if(status==0)
@@ -143,14 +156,57 @@ int main(void)
 	 	for(i=0;i<25;i++)
 		 		buffer[i]=0;
 	 	}
+#endif
+
+#ifdef RECEIVE
 
 
-//	 	HAL_GPIO_WritePin(cs_lora_pb0_GPIO_Port, cs_lora_pb0_Pin, GPIO_PIN_RESET);
-//	 	HAL_SPI_Transmit(&hspi2, &data_addr, 1, TRANSMIT_TIMEOUT);
-//	 	while (HAL_SPI_GetState(&hspi2) != HAL_SPI_STATE_READY);
-//	 	HAL_SPI_Receive(&hspi2, &status, 1, RECEIVE_TIMEOUT);
-//	 	while (HAL_SPI_GetState(&hspi2) != HAL_SPI_STATE_READY);
-//	 	HAL_GPIO_WritePin(cs_lora_pb0_GPIO_Port, cs_lora_pb0_Pin, GPIO_PIN_SET);
+
+
+//	 	while(receivedval==0)
+//	 	status=LoRa_receive(&myLoRa, &receivedval, sizeof(receivedval));
+
+//	 	sniprintf(buffer,sizeof(buffer),"receivedval= %u\n",receivedval);
+	 	packet_size = LoRa_receive(&myLoRa, received_data, 12);
+	 	HAL_UART_Transmit(&huart2, received_data, 12, 100);
+	 	HAL_Delay(500);
+	 	if(packet_size!=0)
+	 		HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+
+
+//	 	LoRa_write(_LoRa, RegFiFoAddPtr, read);
+
+
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     /* USER CODE END WHILE */
@@ -159,6 +215,22 @@ int main(void)
   }
   /* USER CODE END 3 */
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /**
   * @brief System Clock Configuration
@@ -330,6 +402,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(dio_lora_pb2_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 
