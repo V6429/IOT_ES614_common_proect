@@ -53,8 +53,6 @@ dkms.conf
 
 node_2_stm32/.vscode/*
 .vscode/*
-node_2_stm32/stm_cubeide_ws/*
 node_2_stm32/reference_manuals/*
-!node_2_stm32/stm_cubeide_ws/Core
 
 
