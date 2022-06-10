@@ -59,6 +59,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define sleeptime 5
+#define rcvtime 4
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
 #define B1_EXTI_IRQn EXTI15_10_IRQn
@@ -68,6 +70,8 @@ void Error_Handler(void);
 #define USART_RX_GPIO_Port GPIOA
 #define LD2_Pin GPIO_PIN_5
 #define LD2_GPIO_Port GPIOA
+#define LD3_RX_MODE_Pin GPIO_PIN_6
+#define LD3_RX_MODE_GPIO_Port GPIOA
 #define cs_lora_pb0_Pin GPIO_PIN_0
 #define cs_lora_pb0_GPIO_Port GPIOB
 #define reset_lora_pb1_Pin GPIO_PIN_1
