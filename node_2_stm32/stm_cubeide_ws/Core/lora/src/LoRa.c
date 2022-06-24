@@ -85,6 +85,7 @@ void LoRa_gotoMode(LoRa* _LoRa, int mode){
 	//HAL_Delay(10);
 }
 
+
 /* ----------------------------------------------------------------------------- *\
 		name        : LoRa_readReg
 
@@ -470,7 +471,7 @@ uint16_t LoRa_init(LoRa* _LoRa){
 	uint8_t    data;
 	uint8_t    read;
 
-
+	if(LoRa_isvalid(_LoRa)){
 		// goto sleep mode:
 			LoRa_gotoMode(_LoRa, SLEEP_MODE);
 			HAL_Delay(10);
@@ -527,6 +528,8 @@ uint16_t LoRa_init(LoRa* _LoRa){
 				return LORA_OK;
 			else
 				return LORA_NOT_FOUND;
-
-
+	}
+	else {
+		return LORA_UNAVAILABLE;
+	}
 }

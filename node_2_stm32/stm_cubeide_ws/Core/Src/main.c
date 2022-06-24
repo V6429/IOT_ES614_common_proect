@@ -270,6 +270,10 @@ int main(void)
       msg_snd.ID = SENDTO_ID; // TODO
       msg_snd.digital = airquality_input ? 0x01 : 0x00;
       msg_snd.analog_converted = adc_value;
+      msg_snd.future[3]=HAL_GPIO_ReadPin(digital_actu_out1_GPIO_Port, digital_actu_out1_Pin) <<1 | HAL_GPIO_ReadPin(digital_actu_out2_GPIO_Port, digital_actu_out2_Pin);
+
+
+
       message1_addData(&msg_snd, send_data, MESSAGESIZE);
       status = LoRa_transmit(&myLoRa, send_data, MESSAGESIZE, 50);
       if (status == 1)
@@ -297,11 +301,9 @@ int main(void)
 
         // use the recived data for something
          if (packet_size == 12){
-             snprintf(buffer, BUFF_SIZE, "\nReceived %d bytes", packet_size);
-              HAL_UART_Transmit(&huart2, (uint8_t *)buffer, strlen(buffer), 100);
+           snprintf(buffer, BUFF_SIZE, "\nReceived %d bytes", packet_size);
+           HAL_UART_Transmit(&huart2, (uint8_t *)buffer, strlen(buffer), 100);
            message1_getData(&msg_rcv, received_data, packet_size);
-//           HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-
            snprintf(buffer, BUFF_SIZE, "\nID=%c", msg_rcv.ID);
            HAL_UART_Transmit(&huart2, (uint8_t *)buffer, strlen(buffer), 100);
 
@@ -319,6 +321,7 @@ int main(void)
 
          }
          packet_size = 0;
+         HAL_Delay(200);
       }
 #endif
   	HAL_GPIO_WritePin(LD3_RX_MODE_GPIO_Port, LD3_RX_MODE_Pin, GPIO_PIN_RESET);
@@ -328,7 +331,7 @@ int main(void)
     }
 
   }
-  // 
+  //
 
   /* USER CODE END 2 */
 
