@@ -33,11 +33,13 @@ message1_getData(MSGrcv* msg,char* databuffer, char size){
 
 }
 
-message1_addData(MSGrcv* msg,char* databuffer, char size){
+
+
+message1_addData(MSGsend* msg,char* databuffer, char size){
 	databuffer[0]=msg->ID;
 	databuffer[1]=msg->digital;
 
-
+	unsigned char *ptr, i;
 //	databuffer[2] = char (((msg->analog_converted & 0xFF000000) >>24) & 0xFF);  // last FF for safety //MSB
 //	databuffer[3] = (((msg->analog_converted & 0x00FF0000) >>24) & 0xFF); // last FF for safety
 //	databuffer[4] = (((msg->analog_converted & 0x0000FF00) >>24) & 0xFF); // last FF for safety
@@ -46,12 +48,19 @@ message1_addData(MSGrcv* msg,char* databuffer, char size){
 
 	memcpy((databuffer+2), &(msg->analog_converted), sizeof(float)); // this will put MSB first out
 
-	databuffer[6]=msg->analog[0] ;
-	databuffer[7]=msg->analog[1];
-	databuffer[8]=msg->future[0];
-    databuffer[9]=msg->future[1];
-	databuffer[10]=msg->future[2];
-	databuffer[11]=msg->future[3];
+	databuffer[6]=msg->future[0];
+	databuffer[7]=msg->future[1];
+//	memcpy((databuffer+2+sizeof(float)+2), &(msg->analog_converted), sizeof(float));
+
+	ptr = (unsigned char *) &msg->waterFlowed;
+	for (i = 8; i < (8+sizeof(float));i++)
+		databuffer[i]=*(ptr + (i-8));
+
+
+//	databuffer[8]=msg->future[0];
+//    databuffer[9]=msg->future[1];
+//	databuffer[10]=msg->future[2];
+//	databuffer[11]=msg->future[3];
 
 
 }
