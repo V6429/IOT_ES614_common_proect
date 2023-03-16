@@ -23,6 +23,6 @@ C_DEPS :=
 SUBDIRS := \
 Core/Src \
 Core/Startup \
-Core/lora \
+Core/lora/src \
 Drivers/STM32F4xx_HAL_Driver/Src \
 

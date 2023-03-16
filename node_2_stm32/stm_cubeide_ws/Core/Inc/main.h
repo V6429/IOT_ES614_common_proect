@@ -59,8 +59,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define sleeptime 5
-#define rcvtime 4
+#define sleeptime 10
+#define rcvtime 1
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
 #define B1_EXTI_IRQn EXTI15_10_IRQn
@@ -79,6 +79,8 @@ void Error_Handler(void);
 #define dio_lora_pb2_Pin GPIO_PIN_2
 #define dio_lora_pb2_GPIO_Port GPIOB
 #define dio_lora_pb2_EXTI_IRQn EXTI2_IRQn
+#define FlwSensr_Pin GPIO_PIN_8
+#define FlwSensr_GPIO_Port GPIOC
 #define digital_sensor_in_Pin GPIO_PIN_8
 #define digital_sensor_in_GPIO_Port GPIOA
 #define TMS_Pin GPIO_PIN_13

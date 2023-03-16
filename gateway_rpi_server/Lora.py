@@ -1,33 +1,33 @@
 #!/usr/bin/env python3
 
 """ A simple continuous receiver class. """
-
-# Copyright 2015 Mayer Analytics Ltd.
-#
-# This file is part of pySX127x.
-#
-# pySX127x is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public
-# License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later
-# version.
-#
-# pySX127x is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
-# warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
-# details.
-#
-# You can be released from the requirements of the license by obtaining a commercial license. Such a license is
-# mandatory as soon as you develop commercial activities involving pySX127x without disclosing the source code of your
-# own applications, or shipping pySX127x with a closed source product.
-#
-# You should have received a copy of the GNU General Public License along with pySX127.  If not, see
-# <http://www.gnu.org/licenses/>.
-
-
 from time import sleep
 from SX127x.LoRa import *
 from SX127x.LoRaArgumentParser import LoRaArgumentParser
 from SX127x.board_config import BOARD
 import threading
+import paho.mqtt.client as mqttClient
 import datetime
+
+####################     LORA            ##############################################################
+class message:
+    
+    ID=0
+    digital=0
+    analogconverted=0.0
+    analog=[0,0]
+    future=[0,0,0,0]
+
+
+    def pack():
+        pass
+
+    def extract():
+        pass
+
+    def __sizeof__(self) -> int:
+        print("content of message")
+        pass
 
 
 class LoRaRcvCont(LoRa):
@@ -42,7 +42,7 @@ class LoRaRcvCont(LoRa):
 
     def on_rx_done(self):
         self.set_mode(MODE.STDBY)
-        print("\nRxDone...")
+        print("\nLORA GOT DATA ",end="")
         self.clear_irq_flags(RxDone=1)
         self.payload = self.read_payload(nocheck=True)
         print(" PAYLOAD LENGTH =",len(self.payload))
@@ -51,7 +51,6 @@ class LoRaRcvCont(LoRa):
         print("\n")
         self.set_mode(MODE.SLEEP)
         self.reset_ptr_rx()
-        print(datetime.datetime.now())
         self.FLAG_RX_COMPLETED=1
         
         # BOARD.led_off()
@@ -67,11 +66,10 @@ class LoRaRcvCont(LoRa):
 
 
     def on_tx_done(self):
-        print("\nTX...DONE")
+        print("\nLORA TX...DONE")
         self.set_mode(MODE.STDBY)
         self.clear_irq_flags(TxDone=1)
         self.set_dio_mapping( [0, 0, 0, 0, 0, 0])
-        print(datetime.datetime.now())
         self.FLAG_TX_COMPLETED=1
 
 
@@ -139,7 +137,7 @@ def lora_process():
                 # you exit this when  lora.FLAG_RX_COMPLETED gets high
                 pass
 
-            sleep(2)
+            sleep(0.5)
             
             # FLAG_IS_IN_RXMODE=0 # out of receive mode
 
@@ -149,7 +147,15 @@ def lora_process():
                 FLAG_IS_IN_RXMODE=0
                 # we check for any data on payload
                 # if(lora.payload[0]== 0x48):
-                data=[0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF]
+                try :
+                    if(lora.payload[11]==0x00):
+                        data=[0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF]
+                    else :
+                        data=[0xFF,0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF]
+                except e:
+                    print("sending first data")
+                    data=[0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF]
+        
                 lora.transmit(data)
                 print("SEND =",end=" ")
                 for i in data:
@@ -173,14 +179,15 @@ def lora_process():
         lora.set_mode(MODE.SLEEP)
         BOARD.teardown()
     pass
-
+###########################################################################LORA END
 
 
 if __name__=="__main__":
+
     LORATHREAD=threading.Thread(target=lora_process,daemon=True)
     LORATHREAD.start()
     while True:
-        # print("main thread is doing something else THENGA KOLA")
+        print("main thread is doing something else ")
         sleep(2)
     threading.shutdown()
 

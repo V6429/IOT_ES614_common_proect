@@ -9,6 +9,7 @@
 #define SRC_MESSAGE_1_H_
 #include <ctype.h>
 #include <stdint.h>
+#include <stdio.h>
 typedef struct message_recv{
 	char   ID;
 	char digital;
@@ -22,9 +23,8 @@ typedef struct message_send{
 	char   ID;
 	char digital;
 	uint32_t  analog_converted;
-//	float  analog_converted;
-	char analog[2]; // we are using a 12 bit adc right aligned here
-	char future[4];
+	char future[2];       // we are using a 12 bit adc right aligned here
+	float waterFlowed;
 }MSGsend;
 
 // takes data from data buffer and puts it onto a message structure

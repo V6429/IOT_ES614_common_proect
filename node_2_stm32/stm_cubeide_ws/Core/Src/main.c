@@ -67,6 +67,7 @@ SPI_HandleTypeDef hspi2;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim5;
+TIM_HandleTypeDef htim10;
 
 UART_HandleTypeDef huart2;
 
@@ -76,6 +77,9 @@ uint8_t ADC_CONVERTED = 0;
 uint8_t NODE_TRANSMIT = 1; // start with 1
 uint8_t NODE_RECEIVE = 0;
 
+volatile int FLOW_PULSE_COUNT=0;
+volatile int FLOWRATE=0;
+volatile uint8_t FLOWRATE_update=0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -87,6 +91,7 @@ static void MX_ADC1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM5_Init(void);
+static void MX_TIM10_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -99,6 +104,12 @@ static void MX_TIM5_Init(void);
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 
+	if(htim==&htim10){
+//		(Pulse frequency x 60 min) / 7.5Q = flow rate in L/hour
+		FLOWRATE=FLOW_PULSE_COUNT*60/7.5;
+		FLOW_PULSE_COUNT=0;
+		FLOWRATE_update=1;
+	}
 
  if(htim==&htim2) // 1 sec delay
  {
@@ -120,7 +131,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 
+
   char printbuffer[40] = {0};
+  if (GPIO_Pin == FlwSensr_Pin){
+
+	  FLOW_PULSE_COUNT++;
+  }
 
   if (GPIO_Pin == dio_lora_pb2_Pin)
   {
@@ -163,6 +179,8 @@ int main(void)
   MSGrcv msg_rcv;
   MSGsend msg_snd;
   LoRa myLoRa;
+  float waterflowed=0.0;//,*tempfloatptr,tempfloat;
+//  char *tempcharptr1,*tempcharptr2,*tempcharptr3,*tempcharptr4;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -199,6 +217,7 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM2_Init();
   MX_TIM5_Init();
+  MX_TIM10_Init();
   /* USER CODE BEGIN 2 */
 
   //  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
@@ -238,6 +257,9 @@ int main(void)
   {
 
     /// non tx rx stufff
+	 if(FLOWRATE_update)
+		 waterflowed+=FLOWRATE/(3600); // FLOWRATE is in L/hour
+
     if (ADC_CONVERTED)
     {
       ADC_CONVERTED = 0;
@@ -270,7 +292,17 @@ int main(void)
       msg_snd.ID = SENDTO_ID; // TODO
       msg_snd.digital = airquality_input ? 0x01 : 0x00;
       msg_snd.analog_converted = adc_value;
+      msg_snd.waterFlowed=waterflowed;
+//      msg_snd.waterFlowed=22.2;
+//    THIS IS RMOVED  msg_snd.future[3]=HAL_GPIO_ReadPin(digital_actu_out1_GPIO_Port, digital_actu_out1_Pin) <<1 | HAL_GPIO_ReadPin(digital_actu_out2_GPIO_Port, digital_actu_out2_Pin);
+// TO SEE THE LITTLE ENDIANNESS
+//      tempcharptr1=&msg_snd.waterFlowed;
+//      tempcharptr2=tempcharptr1+1;
+//      tempcharptr3=tempcharptr2+1;
+//      tempcharptr4=tempcharptr3+1;
       message1_addData(&msg_snd, send_data, MESSAGESIZE);
+//      tempfloatptr=send_data+8;
+//      tempfloat=*tempfloatptr;
       status = LoRa_transmit(&myLoRa, send_data, MESSAGESIZE, 50);
       if (status == 1)
       {
@@ -297,11 +329,9 @@ int main(void)
 
         // use the recived data for something
          if (packet_size == 12){
-             snprintf(buffer, BUFF_SIZE, "\nReceived %d bytes", packet_size);
-              HAL_UART_Transmit(&huart2, (uint8_t *)buffer, strlen(buffer), 100);
+           snprintf(buffer, BUFF_SIZE, "\nReceived %d bytes", packet_size);
+           HAL_UART_Transmit(&huart2, (uint8_t *)buffer, strlen(buffer), 100);
            message1_getData(&msg_rcv, received_data, packet_size);
-//           HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-
            snprintf(buffer, BUFF_SIZE, "\nID=%c", msg_rcv.ID);
            HAL_UART_Transmit(&huart2, (uint8_t *)buffer, strlen(buffer), 100);
 
@@ -319,6 +349,7 @@ int main(void)
 
          }
          packet_size = 0;
+         HAL_Delay(200);
       }
 #endif
   	HAL_GPIO_WritePin(LD3_RX_MODE_GPIO_Port, LD3_RX_MODE_Pin, GPIO_PIN_RESET);
@@ -328,7 +359,7 @@ int main(void)
     }
 
   }
-  // 
+  //
 
   /* USER CODE END 2 */
 
@@ -629,6 +660,37 @@ static void MX_TIM5_Init(void)
 }
 
 /**
+  * @brief TIM10 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM10_Init(void)
+{
+
+  /* USER CODE BEGIN TIM10_Init 0 */
+
+  /* USER CODE END TIM10_Init 0 */
+
+  /* USER CODE BEGIN TIM10_Init 1 */
+
+  /* USER CODE END TIM10_Init 1 */
+  htim10.Instance = TIM10;
+  htim10.Init.Prescaler = 21000-1;
+  htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim10.Init.Period = 1000-1;
+  htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV4;
+  htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM10_Init 2 */
+
+  /* USER CODE END TIM10_Init 2 */
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -713,6 +775,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(dio_lora_pb2_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : FlwSensr_Pin */
+  GPIO_InitStruct.Pin = FlwSensr_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(FlwSensr_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : digital_sensor_in_Pin */
   GPIO_InitStruct.Pin = digital_sensor_in_Pin;
